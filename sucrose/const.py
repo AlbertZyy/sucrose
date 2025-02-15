@@ -23,14 +23,14 @@ OPTIM_KEY = 'optim'
 EXTRA_KEY = 'extra'
 STEP_KEY = 'step'
 
-LOCAL_THREAD = threading.local
+LOCAL_THREAD = threading.local()
 
 
 def set_current(key: str, data):
-    LOCAL_THREAD.__dict__[key] = data
+    setattr(LOCAL_THREAD, key, data)
 
 def get_current(key: str):
-    if key in LOCAL_THREAD.__dict__:
-        return LOCAL_THREAD.__dict__[key]
+    if hasattr(LOCAL_THREAD, key):
+        return getattr(LOCAL_THREAD, key)
     else:
         return None

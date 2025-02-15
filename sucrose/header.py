@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, Callable
 from functools import partial
 
 from .const import *
+from .sucrose_logger import logger
 
 
 class ProjectHeader():
@@ -34,6 +35,11 @@ class ProjectHeader():
             raise ValueError
 
         set_current('project', self)
+        self._makedir()
+
+    def _makedir(self):
+        os.makedirs(self.CKPTS_DIR, exist_ok=True)
+        os.makedirs(self.LOGS_DIR, exist_ok=True)
 
     @property
     def CKPTS_DIR(self):
@@ -48,9 +54,9 @@ class ProjectHeader():
     def step(self): self._step += 1
     def get_current_step(self): return self._step
     def set_current_step(self, step: int):
-        if isinstance(step, int):
-            self._step = step
-        raise TypeError(f"Step should be an int, but got {step.__class__.__name__}.")
+        if not isinstance(step, int):
+            raise TypeError(f"Step should be an int, but got {step.__class__.__name__}.")
+        self._step = step
 
     ### Checkpoints
 
@@ -58,15 +64,19 @@ class ProjectHeader():
         return f"{self.PROJECT}_{self.EPOCH_PREFIX}{epoch}{self.CKPTS_EXT}"
 
     def find_latest_epoch(self) -> int:
+        """Find the index of the last completed epoch. Return `-1` if no epoch found."""
+        if not os.path.exists(self.CKPTS_DIR):
+            return -1
+
         all_ckpts = os.listdir(self.CKPTS_DIR)
-        max_epoch = 0
+        max_epoch = -1
 
         for name in all_ckpts:
             res = re.match(f'{self.PROJECT}_{self.EPOCH_PREFIX}([0-9]*){self.CKPTS_EXT}', name)
             if res is None:
                 continue
             else:
-                epoch = int(res.group(0))
+                epoch = int(res.group(1))
                 if epoch > max_epoch:
                     max_epoch = epoch
 
@@ -76,15 +86,24 @@ class ProjectHeader():
         os.makedirs(self.CKPTS_DIR, exist_ok=True)
         file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
         self._save_func(data, file_name)
+        logger.info(f"Checkpoint saved to {file_name}")
 
     def load_ckpts(self, epoch: Optional[int] = None):
+        if not os.path.exists(self.CKPTS_DIR):
+            raise FileExistsError(f"Can not find the ckpt directory.")
+
         if epoch is None:
             epoch = self.find_latest_epoch()
 
         file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
-        data_loaded = self._load_func(file_name)
 
-        return data_loaded
+        if os.path.exists(file_name):
+            data_loaded = self._load_func(file_name)
+            logger.info(f"Checkpoint loaded from {file_name}")
+            return data_loaded
+        else:
+            logger.info(f"No checkpoint exists, loading skipped.")
+            return {}
 
 
 def get_current_project() -> ProjectHeader:
