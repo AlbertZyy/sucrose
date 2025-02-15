@@ -1,5 +1,5 @@
 
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from .const import *
 from .header import get_current_project, auto_get_project
@@ -13,11 +13,9 @@ from .sucrose_logger import logger
 def start_project(
         work_dir: str, name: str, *,
         epoch_prefix: str = 'e',
-        backend: str = 'pytorch',
-        ckpts_ext: Optional[str] = None,
-        save_extra_kwds: Dict[str, Any] = {},
-        load_extra_kwds: Dict[str, Any] = {}):
-    return Proj(work_dir, name)
+        ckpts_ext: Optional[str] = None
+    ):
+    return Proj(work_dir, name, epoch_prefix=epoch_prefix, ckpts_ext=ckpts_ext)
 
 
 ### Training
@@ -31,14 +29,3 @@ def get_current_step(project: Optional[Proj] = None, /):
 def epoch_range(length: int, *, project: Optional[Proj] = None):
     start = auto_get_project(project).find_latest_epoch() + 1
     return range(start, start + length)
-
-### Checkpoints
-
-def save_ckpts(epoch: int, data, *, project: Optional[Proj] = None):
-    """Save a checkpoint file for the current project."""
-    auto_get_project(project).save_ckpts(epoch, data)
-
-def load_ckpts(epoch: Optional[int] = None, *, auto_read_step=True,
-               project: Optional[Proj] = None):
-    """Load a checkpoint file of the current project."""
-    return auto_get_project(project).load_ckpts(epoch, auto_read_step=auto_read_step)

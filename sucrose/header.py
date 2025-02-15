@@ -2,10 +2,8 @@
 import os
 import re
 from typing import Dict, Any, Optional, Callable
-from functools import partial
 
 from .const import *
-from .sucrose_logger import logger
 
 
 class ProjectHeader():
@@ -16,23 +14,15 @@ class ProjectHeader():
     def __init__(self,
         work_dir: str, project: str, *,
         epoch_prefix: str = 'e',
-        backend: str = 'pytorch',
         ckpts_ext: Optional[str] = None,
-        save_extra_kwds: Dict[str, Any] = {},
-        load_extra_kwds: Dict[str, Any] = {},
     ):
         self.PROJECT = project
         self.WORK_DIR = work_dir
         self.EPOCH_PREFIX = epoch_prefix
+        if ckpts_ext is None:
+            ckpts_ext = '.pt'
+        self.CKPTS_EXT = ckpts_ext
         self._step = 0
-
-        if backend == 'pytorch':
-            import torch
-            self._save_func = partial(torch.save, **save_extra_kwds)
-            self._load_func = partial(torch.load, **load_extra_kwds)
-            self.CKPTS_EXT = '.pt' if ckpts_ext is None else ckpts_ext
-        else:
-            raise ValueError
 
         set_current('project', self)
         self._makedir()
@@ -81,29 +71,6 @@ class ProjectHeader():
                     max_epoch = epoch
 
         return max_epoch
-
-    def save_ckpts(self, epoch: int, data: Dict[str, Any]):
-        os.makedirs(self.CKPTS_DIR, exist_ok=True)
-        file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
-        self._save_func(data, file_name)
-        logger.info(f"Checkpoint saved to {file_name}")
-
-    def load_ckpts(self, epoch: Optional[int] = None):
-        if not os.path.exists(self.CKPTS_DIR):
-            raise FileExistsError(f"Can not find the ckpt directory.")
-
-        if epoch is None:
-            epoch = self.find_latest_epoch()
-
-        file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
-
-        if os.path.exists(file_name):
-            data_loaded = self._load_func(file_name)
-            logger.info(f"Checkpoint loaded from {file_name}")
-            return data_loaded
-        else:
-            logger.info(f"No checkpoint exists, loading skipped.")
-            return {}
 
 
 def get_current_project() -> ProjectHeader:
