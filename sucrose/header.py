@@ -45,11 +45,12 @@ class ProjectHeader():
 
     ### Training
 
-    def step(self):
-        self._step += 1
-
+    def step(self): self._step += 1
+    def get_current_step(self): return self._step
     def set_current_step(self, step: int):
-        self._step = step
+        if isinstance(step, int):
+            self._step = step
+        raise TypeError(f"Step should be an int, but got {step.__class__.__name__}.")
 
     ### Checkpoints
 
@@ -76,15 +77,12 @@ class ProjectHeader():
         file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
         self._save_func(data, file_name)
 
-    def load_ckpts(self, epoch: Optional[int] = None, *, auto_read_step=True):
+    def load_ckpts(self, epoch: Optional[int] = None):
         if epoch is None:
             epoch = self.find_latest_epoch()
 
         file_name = os.path.join(self.CKPTS_DIR, self.make_ckpt_name(epoch))
         data_loaded = self._load_func(file_name)
-
-        if auto_read_step and ('step' in data_loaded.keys()):
-            self.set_current_step(data_loaded['step'])
 
         return data_loaded
 
@@ -93,16 +91,12 @@ def get_current_project() -> ProjectHeader:
     result = get_current('project')
 
     if result is None:
-        raise RuntimeError()
+        raise RuntimeError("Start a project before getting current project.")
 
     return result
 
-### Checkpoints
-
-def save_ckpts(epoch: int, data):
-    """Save a checkpoint file for the current project."""
-    get_current_project().save_ckpts(epoch, data)
-
-def load_ckpts(epoch: Optional[int] = None, *, auto_read_step=True):
-    """Load a checkpoint file of the current project."""
-    return get_current_project().load_ckpts(epoch, auto_read_step=auto_read_step)
+def auto_get_project(proj: Optional[ProjectHeader] = None, /) -> ProjectHeader:
+    if proj is None:
+        return get_current_project()
+    else:
+        return proj

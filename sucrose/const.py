@@ -1,12 +1,27 @@
 
 import threading
 
+__all__ = [
+    "CKPTS_FOLDER",
+    "LOGS_FOLDER",
+
+    "MODEL_KEY",
+    "OPTIM_KEY",
+    "EXTRA_KEY",
+    "STEP_KEY",
+
+    "set_current",
+    "get_current"
+]
+
+
 CKPTS_FOLDER = 'ckpts'
 LOGS_FOLDER = 'logs'
 
 MODEL_KEY = 'model'
 OPTIM_KEY = 'optim'
 EXTRA_KEY = 'extra'
+STEP_KEY = 'step'
 
 LOCAL_THREAD = threading.local
 
