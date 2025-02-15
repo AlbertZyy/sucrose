@@ -51,8 +51,6 @@ class ProjectHeader():
     def set_current_step(self, step: int):
         self._step = step
 
-    ### Config
-
     ### Checkpoints
 
     def make_ckpt_name(self, epoch: int):
@@ -98,3 +96,13 @@ def get_current_project() -> ProjectHeader:
         raise RuntimeError()
 
     return result
+
+### Checkpoints
+
+def save_ckpts(epoch: int, data):
+    """Save a checkpoint file for the current project."""
+    get_current_project().save_ckpts(epoch, data)
+
+def load_ckpts(epoch: Optional[int] = None, *, auto_read_step=True):
+    """Load a checkpoint file of the current project."""
+    return get_current_project().load_ckpts(epoch, auto_read_step=auto_read_step)

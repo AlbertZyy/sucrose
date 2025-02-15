@@ -4,6 +4,10 @@ import threading
 CKPTS_FOLDER = 'ckpts'
 LOGS_FOLDER = 'logs'
 
+MODEL_KEY = 'model'
+OPTIM_KEY = 'optim'
+EXTRA_KEY = 'extra'
+
 LOCAL_THREAD = threading.local
 
 
