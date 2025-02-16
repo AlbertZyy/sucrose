@@ -5,8 +5,6 @@ __all__ = [
     "CKPTS_FOLDER",
     "LOGS_FOLDER",
 
-    "MODEL_KEY",
-    "OPTIM_KEY",
     "EXTRA_KEY",
     "STEP_KEY",
 
@@ -18,8 +16,6 @@ __all__ = [
 CKPTS_FOLDER = 'ckpts'
 LOGS_FOLDER = 'logs'
 
-MODEL_KEY = 'model'
-OPTIM_KEY = 'optim'
 EXTRA_KEY = 'extra'
 STEP_KEY = 'step'
 
