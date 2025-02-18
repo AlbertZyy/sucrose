@@ -24,6 +24,8 @@ class ProjectHeader():
         self.CKPTS_EXT = ckpts_ext
         self._step = 0
 
+        self._config_data = {}
+
         set_current('project', self)
         self._makedir()
 
@@ -38,6 +40,15 @@ class ProjectHeader():
     @property
     def LOGS_DIR(self):
         return os.path.join(self.WORK_DIR, LOGS_FOLDER, self.PROJECT)
+
+    ### Config
+
+    def update_config(self, **data: Any):
+        self._config_data.update(data)
+
+    @property
+    def CONFIG(self):
+        return self._config_data.copy()
 
     ### Training
 

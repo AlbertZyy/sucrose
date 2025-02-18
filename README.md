@@ -1,6 +1,6 @@
 # Sucrose
 
-Experimental project management tool for pytorch
+Project file management tool for pytorch experiments
 
 ### Quick Start
 

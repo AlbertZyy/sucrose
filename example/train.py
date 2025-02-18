@@ -5,9 +5,10 @@ from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 import sucrose
 
-sucrose.logger.setLevel("INFO")
+sucrose.logger.setLevel("DEBUG")
 
 
+@sucrose.enable_config('model')
 class ExampleModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super().__init__()
@@ -21,8 +22,9 @@ class ExampleModel(nn.Module):
 
 def main(index: int):
     sucrose.start_project('example', 'test1')
+    sucrose.load_config()
 
-    model = ExampleModel(8, 16, 2)
+    model = ExampleModel()
     optim = Adam(model.parameters(), lr=1e-3)
 
     sucrose.load_state_dict(model=model, optim=optim)
