@@ -22,7 +22,6 @@ class ExampleModel(nn.Module):
 
 def main(index: int):
     sucrose.start_project('example', 'test1')
-    sucrose.load_config()
 
     model = ExampleModel()
     optim = Adam(model.parameters(), lr=1e-3)

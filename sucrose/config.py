@@ -84,7 +84,9 @@ class _ConfigWrapper(Generic[_MT]):
             else:
                 logger.warning(f"Key '{key}' is not found in the config dict.")
 
-        if not isinstance(data, dict):
+        if isinstance(data, dict):
+            data = data.copy()
+        else:
             raise TypeError(f"config data is required to be a dict")
 
         for param_key in tuple(data.keys()):
