@@ -3,7 +3,7 @@ import os
 import json
 import inspect
 from typing import (
-    Optional, Generic, TypeVar,
+    Optional, Generic, TypeVar, Type,
     Callable, List
 )
 
@@ -39,7 +39,7 @@ def enable_config(field: Optional[str] = None, /):
     Args:
         field (str | None, optional): Key in the config dict. Use the whole config dict if `None`.
     """
-    def _wrapper(module: type[_MT]):
+    def _wrapper(module: Type[_MT]):
         return _ConfigWrapper(module, field)
     return _wrapper
 
@@ -61,7 +61,7 @@ def _get_KEYWORD_params(func: Callable) -> List[str]:
 
 
 class _ConfigWrapper(Generic[_MT]):
-    def __init__(self, module_class: type[_MT], field: Optional[str] = None,
+    def __init__(self, module_class: Type[_MT], field: Optional[str] = None,
                  verbose=True):
         self._module_class = module_class
         self._field = field
