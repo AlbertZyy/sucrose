@@ -5,7 +5,7 @@ from .const import *
 from .header import get_current_project, auto_get_project
 from .header import ProjectHeader as _Proj
 from .logs import start_pytorch_tensorboard
-from .ckpt import load_state_dict, save_state_dict
+from .ckpt import find_latest_epoch, load_state_dict, save_state_dict
 from .config import load_config, enable_config
 from .sucrose_logger import logger
 
@@ -38,12 +38,12 @@ def start_project(
 
 ### Training
 
-def step(project: Optional[_Proj] = None, /):
-    auto_get_project(project).step()
+def step(num: int = 1, /, project: Optional[_Proj] = None):
+    auto_get_project(project).step(num)
 
 def get_current_step(project: Optional[_Proj] = None, /):
     auto_get_project(project).get_current_step()
 
-def epoch_range(length: int, *, project: Optional[_Proj] = None):
-    start = auto_get_project(project).find_latest_epoch() + 1
-    return range(start, start + length)
+def epoch_iter(num: int, /, *, project: Optional[_Proj] = None):
+    start = find_latest_epoch(auto_get_project(project))
+    yield from range(start, start + num)

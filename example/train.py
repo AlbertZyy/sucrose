@@ -26,7 +26,7 @@ def main(index: int):
     model = ExampleModel()
     optim = Adam(model.parameters(), lr=1e-3)
 
-    sucrose.load_state_dict(model=model, optim=optim)
+    sucrose.load_state_dict(model=model, optim=optim, loader_kwds={'weights_only': True})
 
     train_set = TensorDataset(torch.arange(100, dtype=torch.float32).reshape(10, 10))
     train_loader = DataLoader(train_set, batch_size=2, shuffle=True)
@@ -35,8 +35,7 @@ def main(index: int):
 
     writer = sucrose.start_pytorch_tensorboard()
 
-    for epoch in sucrose.epoch_range(10):
-        print(f"Epoch {epoch}")
+    for epoch in sucrose.epoch_iter(100):
         model.train()
 
         for data, in train_loader:
@@ -55,7 +54,7 @@ def main(index: int):
         num = len(loss_list)
         writer.add_scalar('loss(eval)', sum(loss_list)/num)
 
-        sucrose.save_state_dict(epoch, model=model, optim=optim)
+        sucrose.save_state_dict(10, model=model, optim=optim)
 
 
 if __name__ == "__main__":

@@ -1,15 +1,15 @@
 
 import os
-import re
-from typing import Dict, Any, Optional, Callable
+from typing import Any, Optional
 
 from .const import *
+from .sucrose_logger import logger
 
 
 class ProjectHeader():
-    _step: int
-    _save_func: Callable[[Any, str], Any]
-    _load_func: Callable[[str], Dict[str, Any]]
+    """Provide headers for projects to manage file paths and names."""
+    _step : int
+    _local_epoch : int # changed by `save_state_dict`
 
     def __init__(self,
         work_dir: str, project: str, *,
@@ -22,12 +22,17 @@ class ProjectHeader():
         if ckpts_ext is None:
             ckpts_ext = '.pt'
         self.CKPTS_EXT = ckpts_ext
-        self._step = 0
-
+        self._step = 0 # number of steps finished, index of the next
+        self._local_epoch = 0
         self._config_data = {}
 
         set_current('project', self)
         self._makedir()
+
+    def __del__(self):
+        if self._local_epoch != 0:
+            logger.warning(f"There are still {self._local_epoch} epochs that "
+                           "are not saved as checkpoint files by `save_state_dict()`. ")
 
     def _makedir(self):
         os.makedirs(self.CKPTS_DIR, exist_ok=True)
@@ -41,6 +46,9 @@ class ProjectHeader():
     def LOGS_DIR(self):
         return os.path.join(self.WORK_DIR, LOGS_FOLDER, self.PROJECT)
 
+    def _make_ckpt_name(self, epoch: int):
+        return f"{self.PROJECT}_{self.EPOCH_PREFIX}{epoch}{self.CKPTS_EXT}"
+
     ### Config
 
     def update_config(self, **data: Any):
@@ -52,36 +60,16 @@ class ProjectHeader():
 
     ### Training
 
-    def step(self): self._step += 1
-    def get_current_step(self): return self._step
-    def set_current_step(self, step: int):
+    def step(self, num: int = 1, /):
+        self._step += num
+
+    @property
+    def num_steps(self): return self._step
+    @num_steps.setter
+    def num_steps(self, step: int):
         if not isinstance(step, int):
             raise TypeError(f"Step should be an int, but got {step.__class__.__name__}.")
         self._step = step
-
-    ### Checkpoints
-
-    def make_ckpt_name(self, epoch: int):
-        return f"{self.PROJECT}_{self.EPOCH_PREFIX}{epoch}{self.CKPTS_EXT}"
-
-    def find_latest_epoch(self) -> int:
-        """Find the index of the last completed epoch. Return `-1` if no epoch found."""
-        if not os.path.exists(self.CKPTS_DIR):
-            return -1
-
-        all_ckpts = os.listdir(self.CKPTS_DIR)
-        max_epoch = -1
-
-        for name in all_ckpts:
-            res = re.match(f'{self.PROJECT}_{self.EPOCH_PREFIX}([0-9]*){self.CKPTS_EXT}', name)
-            if res is None:
-                continue
-            else:
-                epoch = int(res.group(1))
-                if epoch > max_epoch:
-                    max_epoch = epoch
-
-        return max_epoch
 
 
 def get_current_project() -> ProjectHeader:
