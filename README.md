@@ -20,10 +20,10 @@ pip install sucrose
 
 ```Text
 ==============================
-Iterator
+Config
 ------------------------------
-Config  Ckpt  Logs
+Project
 ------------------------------
-Header
+Ckpt  Logs
 ==============================
 ```

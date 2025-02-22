@@ -7,28 +7,11 @@ from typing import (
     Callable, List
 )
 
-from .header import auto_get_project
-from .header import ProjectHeader as Proj
+from .project import Project, auto_get_project
 from .sucrose_logger import logger
 
+
 _MT = TypeVar('_MT')
-
-
-def load_config(project: Optional[Proj] = None, /):
-    """Load data from config.json and update the config of the project."""
-    proj = auto_get_project(project)
-    log_file = os.path.join(proj.LOGS_DIR, "config.json")
-
-    if not os.path.exists(log_file):
-        return None
-
-    with open(log_file, 'r') as f:
-        config_data = json.load(f)
-
-    proj.update_config(**config_data)
-    logger.info(f"config file loaded from {log_file}")
-
-    return config_data
 
 
 def enable_config(field: Optional[str] = None, /):
@@ -69,7 +52,7 @@ class _ConfigWrapper(Generic[_MT]):
         self._keyword_bound = _get_KEYWORD_params(module_class.__init__)
         self._proj = None
 
-    def set_project(self, project: Proj, /):
+    def set_project(self, project: Project, /):
         self._proj = project
         return self
 

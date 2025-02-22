@@ -35,7 +35,7 @@ def main(index: int):
 
     writer = sucrose.start_pytorch_tensorboard()
 
-    for epoch in sucrose.epoch_iter(100):
+    for epoch in sucrose.epoch_range(100):
         model.train()
 
         for data, in train_loader:
