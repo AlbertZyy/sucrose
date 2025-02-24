@@ -68,7 +68,7 @@ def load_state_dict_impl(
     data_loaded = _load_pt_file(ckpts_dir, ckpt_file, **loader_kwds)
 
     if data_loaded is None:
-        return None
+        return {}, 0
 
     if not isinstance(data_loaded, dict):
         raise TypeError("State dicts are expected to be dict, "

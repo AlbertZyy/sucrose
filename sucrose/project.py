@@ -113,7 +113,7 @@ class Project():
         if epoch is None:
             epoch = self.find_latest_epoch()
         file_name = self._make_ckpt_name(epoch)
-        extra_data, step =  load_state_dict_impl(
+        extra_data, step = load_state_dict_impl(
             self.CKPTS_DIR, file_name, loader_kwds=loader_kwds, **state_dict
         )
         self.num_steps = step
