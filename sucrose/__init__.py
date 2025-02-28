@@ -1,3 +1,9 @@
+"""
+Sucrose
+=======
+
+The sucrose package manages files of pytorch experiment projects.
+"""
 
 from typing import Optional, Any, Dict
 
@@ -23,7 +29,7 @@ def start_project(
         ckpts_ext (str, optional): Extension for ckeckpoint files. Defualts to `.pt`.
 
     Returns:
-        ProjectHeader.
+        Project.
     """
     proj = _Proj(work_dir, name, epoch_prefix=epoch_prefix, ckpts_ext=ckpts_ext)
     return proj
@@ -38,6 +44,7 @@ def get_current_step(proj: Optional[_Proj] = None, /):
     return auto_get_project(proj).num_steps
 
 def epoch_range(num: int, /, *, proj: Optional[_Proj] = None):
+    """Create a range object to iterate over epochs."""
     return auto_get_project(proj).epoch_range(num)
 
 ### Ckpts
@@ -64,6 +71,11 @@ def load_state_dict(
         load_step (bool, optional): Read step info (if exists) from file into
             the project header if `True`. Defaults to `True`.
 
+    Returns:
+        Dict: Objects remaining in the dictionary after loading the state dict.
+            Or only the data in the dictionary with key `EXTRA_KEY` will be returned
+            if `EXTRA_KEY` (a global constant, defaults to `'extra'`) exists.
+
     Examples:
         ```
         sucrose.load_state_dict(model=model, optim=optim)
@@ -87,10 +99,13 @@ def save_state_dict(
         extra_kwds: Dict[str, Any] = {},
         **state_dict: Any
     ):
-    """Save state dict to a file.
+    """Save state dict to `WORK_DIR/CKPTS_FOLDER/PROJECT/FILE_NAME.pt`.
 
     Args:
         interval (int): The epoch increase compared to the last saved checkpoint file.
+            Calling this function will increase the save counter of the project by 1.
+            The save operation will be triggered only when the counter reaches the interval,
+            and then the counter will be cleared.
         project (ProjectHeader, optional): Project, defaults to the last created.
         save_step (bool, optional): Let the checkpoint file include step info,
             which grows as the `sucrose.step()` function is called. Defaults to `True`.
@@ -116,4 +131,6 @@ def save_state_dict(
 ### Logs
 
 def start_pytorch_tensorboard(proj: Optional[_Proj] = None, **kwargs):
+    """Start a pytorch tensorboard SummaryWriter with log dir
+    `WORK_DIR/LOGS_FOLDER/PROJECT`."""
     return auto_get_project(proj).start_pytorch_tensorboard(**kwargs)
