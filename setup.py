@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="sucrose",
-    version="0.1.0",
+    version="0.1.5",
     author="AlbertZyy",
     author_email="",
     description="PyTorch Experiment Project Manager",
@@ -19,5 +19,5 @@ setuptools.setup(
         "Programming Language :: Python:: 3",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
 )
