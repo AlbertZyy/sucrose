@@ -4,10 +4,10 @@ import re
 import json
 from typing import Dict, Any, Optional
 
-from .const import *
+from ..const import *
+from ..sucrose_logger import logger
 from .ckpt import load_state_dict_impl, save_state_dict_impl
 from .logs import start_pytorch_tensorboard_impl
-from .sucrose_logger import logger
 
 
 class Project():

@@ -1,5 +1,5 @@
 
-from .sucrose_logger import logger
+from ..sucrose_logger import logger
 
 
 def start_pytorch_tensorboard_impl(logdir: str, **kwargs):

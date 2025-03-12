@@ -2,8 +2,8 @@
 import os
 from typing import Tuple, Dict, Mapping, Any, Protocol, Optional
 
-from .const import *
-from .sucrose_logger import logger
+from ..const import *
+from ..sucrose_logger import logger
 
 
 def _save_pt_file(ckpts_dir: str, file_name: str, data: Dict[str, Any]):
