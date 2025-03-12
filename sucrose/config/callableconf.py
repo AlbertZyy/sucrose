@@ -1,38 +1,37 @@
 
-import os
-import json
 import inspect
 from typing import (
     Optional, Generic, TypeVar, Type,
-    Callable, List
+    Callable, List,
 )
 
-from .project import Project, auto_get_project
-from .sucrose_logger import logger
+from ..project import Project, auto_get_project
+from ..sucrose_logger import logger
 
 
 _MT = TypeVar('_MT')
 
 
 def enable_config(field: Optional[str] = None, /):
-    """Allow Sucrose to manage the parameters required for initialization.
+    """Allow Sucrose to manage the parameters required for calling.
 
     Position-only args are not supported as the config data is stored in a dict.
 
     Args:
         field (str | None, optional): Key in the config dict. Use the whole config dict if `None`.
     """
-    def _wrapper(module: Type[_MT]):
-        return _ConfigWrapper(module, field)
+    def _wrapper(obj: Callable[..., _MT]):
+        return _ConfigWrapper(obj, field)
     return _wrapper
 
 
 def _get_KEYWORD_params(func: Callable) -> List[str]:
-    sig = inspect.signature(func)
+    is_class = isinstance(func, Type)
+    sig = inspect.signature(func.__init__ if is_class else func)
     accepts_keyword = []
 
     for name, param in sig.parameters.items():
-        if name == 'self':
+        if is_class and name == 'self':
             continue
 
         if param.kind in (param.POSITIONAL_ONLY, param.VAR_POSITIONAL):
@@ -44,12 +43,15 @@ def _get_KEYWORD_params(func: Callable) -> List[str]:
 
 
 class _ConfigWrapper(Generic[_MT]):
-    def __init__(self, module_class: Type[_MT], field: Optional[str] = None,
-                 verbose=True):
-        self._module_class = module_class
+    def __init__(self,
+            target: Callable[..., _MT],
+            field: Optional[str] = None,
+            verbose: bool = True
+        ):
+        self._target = target
         self._field = field
         self._verbose = verbose
-        self._keyword_bound = _get_KEYWORD_params(module_class.__init__)
+        self._keyword_bound = _get_KEYWORD_params(target)
         self._proj = None
 
     def set_project(self, project: Project, /):
@@ -76,14 +78,14 @@ class _ConfigWrapper(Generic[_MT]):
             if param_key not in self._keyword_bound:
                 data.pop(param_key)
                 logger.debug(f"Ignored key '{param_key}' which is not supported "
-                             f"by {self._module_class.__name__}.")
+                             f"by {self._target.__name__}.")
 
         if self._verbose:
-            print(f"Sucrose: add the following args for {self._module_class.__name__} "
+            print(f"Sucrose: add the following args for {self._target.__name__} "
                   f"in project {proj.PROJECT}:")
             for param_key, param_val in data.items():
                 print(f"\t{param_key}:\t{param_val}")
 
         data.update(kwds)
 
-        return self._module_class(*args, **data)
+        return self._target(*args, **data)
