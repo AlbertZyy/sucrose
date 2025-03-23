@@ -4,7 +4,8 @@ import threading
 __all__ = [
     "CKPTS_FOLDER",
     "LOGS_FOLDER",
-
+    "DEFAULT_EPOCH_PREFIX",
+    "DEFAUTL_CKPTS_EXT",
     "EXTRA_KEY",
     "STEP_KEY",
 
@@ -15,7 +16,8 @@ __all__ = [
 
 CKPTS_FOLDER = 'ckpts'
 LOGS_FOLDER = 'logs'
-
+DEFAULT_EPOCH_PREFIX = 'e'
+DEFAUTL_CKPTS_EXT = '.pt'
 EXTRA_KEY = 'extra'
 STEP_KEY = 'step'
 

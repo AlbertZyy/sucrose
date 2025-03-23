@@ -5,6 +5,7 @@ import json
 from typing import Dict, Any, Optional
 
 from ..const import *
+from ..utils import lookup
 from ..sucrose_logger import logger
 from .ckpt import load_state_dict_impl, save_state_dict_impl
 from .logs import start_pytorch_tensorboard_impl
@@ -12,26 +13,19 @@ from .logs import start_pytorch_tensorboard_impl
 
 class Project():
     """Provide projects to manage file paths and names."""
+    _config_data : Dict[str, Any]
     _step : int
     _local_epoch : int # changed by `save_state_dict`
 
-    def __init__(self,
-        work_dir: str, project: str, *,
-        epoch_prefix: str = 'e',
-        ckpts_ext: Optional[str] = None,
-    ):
+    def __init__(self, work_dir: str, project: str):
         self.PROJECT = project
         self.WORK_DIR = work_dir
-        self.EPOCH_PREFIX = epoch_prefix
-        if ckpts_ext is None:
-            ckpts_ext = '.pt'
-        self.CKPTS_EXT = ckpts_ext
+        self._config_data = {}
+        self.load_config()
+        self.EPOCH_PREFIX = self.lookup("project/epoch_prefix", sep="/", default=DEFAULT_EPOCH_PREFIX)
+        self.CKPTS_EXT = self.lookup("project/ckpts_ext", sep="/", default=DEFAUTL_CKPTS_EXT)
         self._step = 0 # number of steps finished, index of the next
         self._local_epoch = 0
-        self._config_data = {}
-
-        set_current('project', self)
-        self.load_config()
 
     def __del__(self):
         if self._local_epoch != 0:
@@ -67,7 +61,10 @@ class Project():
 
     @property
     def CONFIG(self):
-        return self._config_data.copy()
+        return self._config_data
+
+    def lookup(self, field: str, *, sep="/", default: Any = None):
+        return lookup(self._config_data, field, sep=sep, copy=True, default=default)
 
     ### Training
 

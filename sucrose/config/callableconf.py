@@ -12,7 +12,7 @@ from ..sucrose_logger import logger
 _MT = TypeVar('_MT')
 
 
-def enable_config(field: Optional[str] = None, /):
+def enable_config(field: Optional[str] = None, /, proj: Optional[Project] = None, verbose=True):
     """Allow Sucrose to manage the parameters required for calling.
 
     Position-only args are not supported as the config data is stored in a dict.
@@ -21,7 +21,7 @@ def enable_config(field: Optional[str] = None, /):
         field (str | None, optional): Key in the config dict. Use the whole config dict if `None`.
     """
     def _wrapper(obj: Callable[..., _MT]):
-        return _ConfigWrapper(obj, field)
+        return _ConfigWrapper(obj, field, proj=proj, verbose=verbose)
     return _wrapper
 
 
@@ -46,17 +46,14 @@ class _ConfigWrapper(Generic[_MT]):
     def __init__(self,
             target: Callable[..., _MT],
             field: Optional[str] = None,
+            proj: Optional[Project] = None,
             verbose: bool = True
         ):
         self._target = target
         self._field = field
         self._verbose = verbose
         self._keyword_bound = _get_KEYWORD_params(target)
-        self._proj = None
-
-    def set_project(self, project: Project, /):
-        self._proj = project
-        return self
+        self._proj = proj
 
     def __call__(self, *args, **kwds) -> _MT:
         proj = auto_get_project(self._proj)

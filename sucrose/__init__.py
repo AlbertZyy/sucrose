@@ -14,24 +14,10 @@ from .config import enable_config
 from .sucrose_logger import logger
 
 
-def start_project(
-        work_dir: str, name: str, *,
-        epoch_prefix: str = 'e',
-        ckpts_ext: Optional[str] = None,
-    ):
-    """Start a project and return its header.
-
-    Args:
-        work_dir (str): Path to the workspace filder.
-        name (str): Project name.
-        epoch_prefix (str, optional): Prefix for the epoch number in checkpoint
-            file names. Defaults to `e`.
-        ckpts_ext (str, optional): Extension for ckeckpoint files. Defualts to `.pt`.
-
-    Returns:
-        Project.
-    """
-    proj = _Proj(work_dir, name, epoch_prefix=epoch_prefix, ckpts_ext=ckpts_ext)
+def start_project(work_dir: str, name: str):
+    """Start a project."""
+    proj = _Proj(work_dir, name)
+    set_current('project', proj)
     return proj
 
 
