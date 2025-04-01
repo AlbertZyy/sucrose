@@ -1,8 +1,8 @@
-from typing import Any, Union, Mapping, Dict
+from typing import Any, Union, Optional, Mapping, Dict, Iterable
 
 from .sucrose_logger import logger
 
-__all__ = ["lookup"]
+__all__ = ["lookup", "lookup_path"]
 
 
 def mapping_copy(data: Mapping[str, Any], /) -> Dict[str, Any]:
@@ -20,7 +20,7 @@ def mapping_copy(data: Mapping[str, Any], /) -> Dict[str, Any]:
 
 def lookup(
         data: Mapping[str, Any],
-        field: str,
+        field: Optional[str] = None,
         *,
         sep: str = "/",
         copy: bool = False,
@@ -30,14 +30,28 @@ def lookup(
 
     Args:
         data (Mapping[str, Any]): The mapping to lookup.
-        field (str): The field path to lookup.
+        field (str | None, optional): The field path to lookup.
+            Return the input mapping if `None`.
         sep (str, optional): The separator to use. Defaults to "/".
         copy (bool, optional): Whether to copy recursively if the result is a mapping.
             Defaults to False.
 
     """
+    if field is None:
+        return mapping_copy(data) if copy else data
+
     path = field.split(sep)
 
+    return lookup_path(data, path, copy=copy, default=default)
+
+
+def lookup_path(
+        data: Mapping[str, Any],
+        path: Iterable[str] = (),
+        *,
+        copy: bool = False,
+        default: Any = None
+    ) -> Union[Mapping[str, Any], Any]:
     for key in path:
         if isinstance(data, Mapping):
             if key in data:

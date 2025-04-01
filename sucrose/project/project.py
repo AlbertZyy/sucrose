@@ -2,10 +2,10 @@
 import os
 import re
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Iterable, Any, Optional, Union, overload
 
 from ..const import *
-from ..utils import lookup
+from ..utils import lookup_path, lookup
 from ..sucrose_logger import logger
 from .ckpt import load_state_dict_impl, save_state_dict_impl
 from .logs import start_pytorch_tensorboard_impl
@@ -22,8 +22,14 @@ class Project():
         self.WORK_DIR = work_dir
         self._config_data = {}
         self.load_config()
-        self.EPOCH_PREFIX = self.lookup("project/epoch_prefix", sep="/", default=DEFAULT_EPOCH_PREFIX)
-        self.CKPTS_EXT = self.lookup("project/ckpts_ext", sep="/", default=DEFAUTL_CKPTS_EXT)
+        self.EPOCH_PREFIX = lookup_path(
+            self._config_data, ("project", "epoch_prefix"), default=DEFAULT_EPOCH_PREFIX
+        )
+        assert isinstance(self.EPOCH_PREFIX, str)
+        self.CKPTS_EXT = lookup_path(
+            self._config_data, ("project", "ckpts_ext"), default=DEFAUTL_CKPTS_EXT
+        )
+        assert isinstance(self.CKPTS_EXT, str)
         self._step = 0 # number of steps finished, index of the next
         self._local_epoch = 0
 
@@ -63,8 +69,20 @@ class Project():
     def CONFIG(self):
         return self._config_data
 
-    def lookup(self, field: str, *, sep="/", default: Any = None):
-        return lookup(self._config_data, field, sep=sep, copy=True, default=default)
+    @overload
+    def config(self, *, default: Any = None) -> Dict[str, Any]: ...
+    @overload
+    def config(self, field: Optional[str], /, *, sep="/", default: Any = None) -> Union[Dict[str, Any], Any]: ...
+    @overload
+    def config(self, fields: Iterable[str], /, *, default: Any = None) -> Union[Dict[str, Any], Any]: ...
+    def config(self, fields=None, sep="/", default: Any = None):
+        if isinstance(fields, str) or fields is None:
+            return lookup(self._config_data, fields, sep=sep, copy=True, default=default)
+        elif isinstance(fields, Iterable):
+            return lookup_path(self._config_data, fields, copy=True, default=default)
+        else:
+            raise TypeError("fields should be str or Iterable[str], "
+                            f"but got {type(fields).__name__}.")
 
     ### Training
 
