@@ -14,9 +14,19 @@ from ..sucrose_logger import logger
 _MT = TypeVar('_MT')
 
 @overload
-def enable_config(fields: str, *, sep: Optional[str] = "/", proj: Optional[Project] = None, verbose=True): ...
+def enable_config(
+    fields: str,
+    *,
+    sep: Optional[str] = "/",
+    proj: Optional[Project] = None,
+    verbose=True
+) -> Callable[[Callable[..., _MT]], "_ConfigWrapper[_MT]"]: ...
 @overload
-def enable_config(*fields: str, proj: Optional[Project] = None, verbose=True): ...
+def enable_config(
+    *fields: str,
+    proj: Optional[Project] = None,
+    verbose=True
+) -> Callable[[Callable[..., _MT]], "_ConfigWrapper[_MT]"]: ...
 def enable_config(
         *fields: str,
         sep: Optional[str] = "/",
@@ -92,7 +102,7 @@ class _ConfigWrapper(Generic[_MT]):
         if kwargs is NoReturnFlag:
             tname = self._target.__name__
             raise RuntimeError(f"config kwargs for {tname} is not found "
-                                f"in {proj.PROJECT}:{"/".join(self._cpath)}")
+                                f"in {proj.PROJECT}:{'/'.join(self._cpath)}")
 
         if not isinstance(kwargs, dict):
             raise TypeError("config kwargs is required to be a dict, "
