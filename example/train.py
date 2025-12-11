@@ -52,7 +52,7 @@ def main(index: int):
             loss_list.append(loss)
 
         num = len(loss_list)
-        writer.add_scalar('loss(eval)', sum(loss_list)/num)
+        writer.add_scalar('loss(eval)', sum(loss_list)/num, sucrose.get_current_step())
 
         sucrose.save_state_dict(10, model=model, optim=optim)
 
