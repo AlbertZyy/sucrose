@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict
 from .const import *
 from .project import get_current_project, auto_get_project
 from .project import Project as _Proj
-from .config import enable_config
+from .config import *
 from .sucrose_logger import logger
 
 

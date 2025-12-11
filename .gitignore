@@ -173,3 +173,6 @@ cython_debug/
 # Saves of Example Files
 ckpts/
 logs/
+
+# VSCode
+.vscode/

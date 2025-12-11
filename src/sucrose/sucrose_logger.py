@@ -1,10 +1,10 @@
 
 import logging
 
-logger = logging.getLogger('sucrose')
+logger = logging.getLogger('Sucrose')
 logger.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
-formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(name)s: %(message)s', datefmt='%m-%d %H:%M:%S')
+formatter = logging.Formatter('[%(asctime)s]<%(levelname)s> %(name)s: %(message)s', datefmt='%m-%d %H:%M:%S')
 handler.setFormatter(formatter)
 
 if not logger.handlers:
