@@ -5,47 +5,65 @@ Sucrose
 The sucrose package manages files of pytorch experiment projects.
 """
 
-from typing import Optional, Any, Dict
+__all__ = [
+    "start_project",
+    "step",
+    "get_current_step",
+    "epoch_range",
+    "find_last_epoch",
+    "load_state_dict",
+    "save_state_dict",
+    "start_pytorch_tensorboard",
+]
+
+from typing import Any, TypeVar
+from collections.abc import Callable
 
 from .const import *
-from .project import get_current_project, auto_get_project
-from .project import Project as _Proj
 from .config import *
+from .project import *
 from .sucrose_logger import logger
+
+_R = TypeVar('_R')
 
 
 def start_project(work_dir: str, name: str):
     """Start a project."""
-    proj = _Proj(work_dir, name)
+    proj = Project(work_dir, name)
     set_current('project', proj)
     return proj
 
+### Config
+
+def partial(func: Callable[..., _R], /, prefix: str, proj: Project | None = None):
+    return auto_get_project(proj).partial(func, prefix)
 
 ### Training
 
-def step(num: int = 1, /, proj: Optional[_Proj] = None):
+def step(num: int = 1, /, proj: Project | None = None):
     return auto_get_project(proj).step(num)
 
-def get_current_step(proj: Optional[_Proj] = None, /):
+def get_current_step(proj: Project | None = None, /):
     return auto_get_project(proj).num_steps
 
-def epoch_range(num: int, /, *, proj: Optional[_Proj] = None):
+def epoch_range(num: int, /, *, proj: Project | None = None):
     """Create a range object to iterate over epochs."""
     return auto_get_project(proj).epoch_range(num)
 
 ### Ckpts
 
-def find_last_epoch(proj: Optional[_Proj] = None, /):
+def find_last_epoch(proj: Project | None = None, /):
     """Find the number of finished epoches, which is alse the index(0-base)
         of the next epoch. Return `0` if no epoch found."""
-    return auto_get_project(proj).find_latest_epoch()
+    return auto_get_project(proj).LAST_EPOCH
 
 def load_state_dict(
-        epoch: Optional[int] = None, *,
-        proj: Optional[_Proj] = None,
-        loader_kwds: Dict[str, Any] = {},
-        **state_dict: Any
-    ):
+    epoch: int | None = None, *,
+    proj: Project | None = None,
+    load_step: bool = True,
+    loader_kwds: dict[str, Any] = {},
+    **state_dict: Any
+):
     """Load state dict to objects.
 
     Args:
@@ -59,8 +77,6 @@ def load_state_dict(
 
     Returns:
         Dict: Objects remaining in the dictionary after loading the state dict.
-            Or only the data in the dictionary with key `EXTRA_KEY` will be returned
-            if `EXTRA_KEY` (a global constant, defaults to `'extra'`) exists.
 
     Examples:
         ```
@@ -75,16 +91,15 @@ def load_state_dict(
         ```
     """
     return auto_get_project(proj).load_state_dict(
-        epoch, loader_kwds=loader_kwds, **state_dict
+        epoch, load_step=load_step, loader_kwds=loader_kwds, **state_dict
     )
 
 def save_state_dict(
-        interval: int, *,
-        proj: Optional[_Proj] = None,
-        save_step=True,
-        extra_kwds: Dict[str, Any] = {},
-        **state_dict: Any
-    ):
+    interval: int, *,
+    proj: Project | None = None,
+    save_step: bool = True,
+    **state_dict: Any
+):
     """Save state dict to `WORK_DIR/CKPTS_FOLDER/PROJECT/FILE_NAME.pt`.
 
     Args:
@@ -95,7 +110,7 @@ def save_state_dict(
         project (ProjectHeader, optional): Project, defaults to the last created.
         save_step (bool, optional): Let the checkpoint file include step info,
             which grows as the `sucrose.step()` function is called. Defaults to `True`.
-        extra_kwds (Dict[str, Any]): Other data.
+        **state_dict (Any): Objects to save. Save state dicts if they support.
 
     Examples:
         ```
@@ -111,12 +126,12 @@ def save_state_dict(
         ```
     """
     return auto_get_project(proj).save_state_dict(
-        interval, save_step=save_step, extra_kwds=extra_kwds, **state_dict
+        interval, save_step=save_step, **state_dict
     )
 
 ### Logs
 
-def start_pytorch_tensorboard(proj: Optional[_Proj] = None, **kwargs):
+def start_pytorch_tensorboard(proj: Project | None = None, **kwargs):
     """Start a pytorch tensorboard SummaryWriter with log dir
     `WORK_DIR/LOGS_FOLDER/PROJECT`."""
     return auto_get_project(proj).start_pytorch_tensorboard(**kwargs)

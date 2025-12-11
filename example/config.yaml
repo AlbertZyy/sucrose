@@ -1,0 +1,11 @@
+
+base:
+  model.input_dim: 10
+  model.hidden_dim: 10
+  model.output_dim: 10
+  optim.lr: 1e-3
+
+base/test1:
+  model.hidden_dim: 20
+
+base/test2:

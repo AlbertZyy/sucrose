@@ -16,7 +16,9 @@ def lookup(
     domain: str,
     field: str
 ) -> Any:
-    """Lookup the given field path in data."""
+    """Lookup the given field path in data.
+
+    Raise KeyError if not found."""
     check_data(data)
 
     if domain in data:
