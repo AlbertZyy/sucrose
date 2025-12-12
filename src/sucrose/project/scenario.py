@@ -173,11 +173,11 @@ class Scenario():
                 Defaults to `None`.
             load_step (bool, optional): Read step info (if exists) from file into
                 the scenario if `True`. Defaults to `True`.
-            loader_kwds (Dict[str, Any], optional): Keyword args for the loader function
+            loader_kwds (dict[str, Any], optional): Keyword args for the loader function
                 like `torch.load`.
 
         Returns:
-            Dict: Objects remaining in the dictionary after loading the state dict.
+            dict: Objects remaining in the dictionary after loading the state dict.
 
         Examples:
             ```
@@ -216,7 +216,7 @@ class Scenario():
         interval: int = 1,
         *,
         save_step: bool = True,
-        **state_dict: SupportsStateDict
+        **state_dict: SupportsStateDict | Any
     ) -> None:
         """Save state dict to `WORK_DIR/CKPTS_FOLDER/Scenario/FILE_NAME`.
 
@@ -228,7 +228,8 @@ class Scenario():
                 the counter will be cleared.
             save_step (bool, optional): Let the checkpoint file include step info,
                 which grows as the `sucrose.step()` function is called. Defaults to `True`.
-            **state_dict (Any): Objects to save. Save state dicts if they support.
+            **state_dict (SupportsStateDict | Any): Objects to save.
+                Save state dicts if they support.
 
         Examples:
             ```

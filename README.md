@@ -1,34 +1,96 @@
 # Sucrose
 
-Project file management tool for PyTorch experiments.
+A Python package for managing PyTorch experiment projects.
+
+## Overview
+
+Sucrose provides utilities for managing machine learning experiments including configuration management, checkpoint handling, logging, and scenario-based organization of experiments.
+
+## Key Features
+
+### Scenario Management
+The core concept in Sucrose is the `Scenario`, which manages file paths, configurations, checkpoints, and logs for your experiments.
+
+### Configuration Management
+Sucrose allows users to define and manage experiment configurations using YAML
+files, like
+```yaml
+base:
+  model.arg1: 100
+  model.arg2: 120
+  optim.lr: 0.01
+```
+Or inherit from a parent domain
+```yaml
+base/case1:
+  model.arg1: 200
+```
+This allows you to easily create, track and replicate different scenarios
+based on a common base configuration.
+
+### Checkpoint and Logging
+Automatically save and load model and optimizer states, ensuring that you can
+resume training from any point.
+It also integrates with TensorBoard for real-time monitoring of training progress
+and other metrics.
 
 ## Quick start
 
-### Start a project
+### Start a scenario
 
-Let the relative path to the project's config.json file be
+Let the config.yaml file be directly under the project's workspace directory `<workspace>/config.yaml`,
+and it has the following content, for example,
+```yaml
+base:
+  model.input_dim: 100
+  model.hidden_dim: 100
+  model.output_dim: 100
 
-`<relative_path>/logs/<project_name>/config.json`,
+base/case1:
+  model.input_dim: 200
+```
 
 then run
 ```python
 import sucrose
 
-sucrose.start_project('relative_path', 'project_name')
+ssc = sucrose.scenario('path/to/workspace', 'base/case1')
 ```
-to start a project named `project_name`.
-Every operations below requires a started project.
+to handle a scenario named `base/case1`, which is corresponding to the domain with the same name in the config file.
+Every operations below requires a started scenario.
+
+### Access configurations
+
+1. Configurations can be accessed by `__getitem__` like a dict
+```python
+print(ssc['model.input_dim']) # 200
+```
+
+2. Pass configuration key-value pairs into callables like what `functools.partial` does
+```python
+model = ssc.partial(ExampleModule, "model")()
+# Here "model" is the prefix to filter the fields.
+# So this is equivalent to:
+from functools import partial
+
+model = partial(
+  ExampleModule,
+  inputdim=200,
+  hidden_dim=100,
+  output_dim=100
+)()
+```
 
 ### Load state dict
 
-If the NN module, oprimizer, and other object supporting `load_state_dict` method have been initialized, run
+If the NN module, oprimizer, or any other object supporting `load_state_dict` method have been initialized, run
 
 ```python
-sucrose.load_state_dict(model=model, optim=optim, loader_kwds={'weights_only': True})
+ssc.load_state_dict(model=model, optim=optim, loader_kwds={'weights_only': True})
 ```
 
 to load the last state dict automatically from
-`<relative_path>/ckpts/<project_name>/`.
+`<workspace>/ckpts/<scenario>/`.
 Skipped if not exists.
 
 In this example, the checkpoint file constains a dict, where the state dict for the `model` object is the value of key `"model"`, and the state dict for the `optim` object is the value of key `"optim"`.
@@ -38,10 +100,10 @@ In this example, the checkpoint file constains a dict, where the state dict for 
 If tensorboard is needed, run
 
 ```python
-writer = sucrose.start_pytorch_tensorboard()
+writer = ssc.start_pytorch_tensorboard()
 ```
 
-to start a writter on log_dir `<relative_path>/logs/<project_name>/`.
+to start a writter on log_dir `<workspace>/logs/<scenario>/`.
 
 ### The training loop
 
@@ -54,10 +116,10 @@ for epoch in sucrose.epoch_range(N):
 
 ### Save state dict
 
-Like the `load_state_dict` function, for any object supporting a `state_dict` method, the returned dict can be save to the project's checkpoint file by running
+Like the `load_state_dict` function, for any object supporting a `state_dict` method, the returned dict can be save to the scenario's checkpoint file by running
 
 ```python
-sucrose.save_state_dict(10, model=model, optim=optim)
+ssc.save_state_dict(10, model=model, optim=optim)
 ```
 
 where the first positional argument `10` is the saving interval which can be any positive integer.
@@ -67,13 +129,4 @@ In this function, the `save_step` keyword defaults to `True`, means that the num
 Therefore, don't forget to call `sucrose.step()` after `optimizer.step()` to let `sucrose` know the step increasement.
 
 To get the current global step, use
-`sucrose.get_current_step()`.
-
-### More
-
-These operations called from the sucrose "name space" act in the context of the latest-started project.
-Users can handle the project explicitly after fetching the Project object, which is returned by `sucrose.start_project`.
-```python
-proj = sucrose.start_project(...)
-```
-Methods like `proj.load_state_dict`, `proj.save_state_dict` and `proj.step` are equivalent to the version in `sucrose` if `proj` is the latest-started project.
+`ssc.num_stes`.

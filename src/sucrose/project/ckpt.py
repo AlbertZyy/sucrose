@@ -7,7 +7,6 @@ __all__ = [
 
 import os
 from typing import Any, Protocol, runtime_checkable
-from collections.abc import Mapping
 
 
 def _save_pt_file(ckpts_dir: str, file_name: str, data: dict[str, Any]):
@@ -31,7 +30,7 @@ def _load_pt_file(ckpts_dir: str, file_name: str, **loader_kwds):
 @runtime_checkable
 class SupportsStateDict(Protocol):
     def state_dict(self) -> dict[str, Any]: ...
-    def load_state_dict(self, state_dict: Mapping[str, Any]): ...
+    def load_state_dict(self, state_dict: dict[str, Any]) -> Any: ...
 
 
 def save_state_dict_impl(
