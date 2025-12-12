@@ -1,4 +1,12 @@
 
+workspace:
+  ckpts_folder: 'ckpts'
+  logs_folder: 'logs'
+  epoch_prefix: 'e'
+  ckpts_extension: '.pt'
+  step_key: 'step'
+
+# add your configurations below
 base:
   model.input_dim: 10
   model.hidden_dim: 10

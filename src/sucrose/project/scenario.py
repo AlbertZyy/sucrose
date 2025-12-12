@@ -1,22 +1,36 @@
 
 __all__ = [
-    "Project",
     "find_latest_epoch",
-    "get_current_project",
-    "auto_get_project"
+    "Scenario",
+    "get_current_scenario",
+    "auto_get_scenario"
 ]
 
 import os, re, yaml
+import threading
 from typing import Any, TypeVar
 from collections.abc import Callable
 
 from ..sucrose_logger import logger
 from ..config import *
-from ..const import *
 from .ckpt import *
 from .logs import *
 
 _R = TypeVar("_R")
+
+
+LOCAL_THREAD = threading.local()
+
+
+def set_current(key: str, data):
+    setattr(LOCAL_THREAD, key, data)
+
+
+def get_current(key: str):
+    if hasattr(LOCAL_THREAD, key):
+        return getattr(LOCAL_THREAD, key)
+    else:
+        return None
 
 
 def find_latest_epoch(ckpts_dir: str, filename_pattern: str) -> int:
@@ -57,27 +71,34 @@ def load_config(work_dir: str) -> dict[str, Any]:
     return config_data
 
 
-class Project():
-    """Provide projects to manage file paths and names."""
+class Scenario():
+    """Provide scenarios to manage file paths and names."""
     def __init__(
         self,
         work_dir: str,
-        project_name: str,
+        name: str,
         *,
-        ckpt_extension: str = 'pt',
-        epoch_prefix: str = 'e',
+        meta_domain: str = "workspace"
     ):
-        self.NAME = project_name
+        self.NAME = name
         self.WORK_DIR = work_dir
         self.CONFIG = load_config(work_dir)
-        self.EPOCH_PREFIX = epoch_prefix
-        self.CKPTS_EXT = ckpt_extension.lstrip('.')
+
+        context = {"data": self.CONFIG, "domain": meta_domain}
+
+        self.CKPTS_FOLDER = lookup(**context, field="ckpts_folder")
+        self.LOGS_FOLDER  = lookup(**context, field="logs_folder")
+        self.EPOCH_PREFIX = lookup(**context, field="epoch_prefix")
+        self.CKPTS_EXT    = lookup(**context, field="ckpts_extension").lstrip('.')
+        self.STEP_KEY     = lookup(**context, field="step_key")
+
         self.LAST_EPOCH = find_latest_epoch(
             self.CKPTS_DIR,
-            f'{project_name}_{epoch_prefix}([0-9]*).{ckpt_extension}'
+            f'{name.replace("/", "_")}_{self.EPOCH_PREFIX}([0-9]*).{self.CKPTS_EXT}'
         )
         self._step = 0 # number of steps finished, index of the next
         self._local_epoch = 0
+
 
     def __del__(self):
         if self._local_epoch != 0:
@@ -86,14 +107,14 @@ class Project():
 
     @property
     def CKPTS_DIR(self):
-        return os.path.join(self.WORK_DIR, CKPTS_FOLDER, self.NAME)
+        return os.path.join(self.WORK_DIR, self.CKPTS_FOLDER, self.NAME)
 
     @property
     def LOGS_DIR(self):
-        return os.path.join(self.WORK_DIR, LOGS_FOLDER, self.NAME)
+        return os.path.join(self.WORK_DIR, self.LOGS_FOLDER, self.NAME)
 
     def _make_ckpt_name(self, epoch: int):
-        return f"{self.NAME}_{self.EPOCH_PREFIX}{epoch}.{self.CKPTS_EXT}"
+        return f"{self.NAME.replace("/", "_")}_{self.EPOCH_PREFIX}{epoch}.{self.CKPTS_EXT}"
 
     ### Config
 
@@ -142,7 +163,32 @@ class Project():
         loader_kwds: dict[str, Any] = {},
         **state_dict: SupportsStateDict
     ) -> dict[str, Any]:
-        """Load state dict on the given epoch."""
+        """Load state dict to objects.
+
+        Args:
+            epoch (int | None, optional): The epoch number of the checkpoint
+                file to read. Use the biggest number found in the folder if `None`.
+                Defaults to `None`.
+            load_step (bool, optional): Read step info (if exists) from file into
+                the scenario if `True`. Defaults to `True`.
+            loader_kwds (Dict[str, Any], optional): Keyword args for the loader function
+                like `torch.load`.
+
+        Returns:
+            Dict: Objects remaining in the dictionary after loading the state dict.
+
+        Examples:
+            ```
+            obj.load_state_dict(model=model, optim=optim)
+            ```
+            This line is equivelant to:
+            ```
+            data = torch.load("path/to/checkpoint.pt")
+            model.load_state_dict(data['model'])
+            optim.load_state_dict(data['optim'])
+            ph.num_step = data['step'] # this key is actually `sucrose.const.STEP_KEY`
+            ```
+        """
         if epoch is None:
             epoch = self.LAST_EPOCH
         file_name = self._make_ckpt_name(epoch)
@@ -156,8 +202,8 @@ class Project():
                            "Loading skipped")
             return {}
 
-        if load_step and STEP_KEY in extra_data:
-            self.num_steps = extra_data[STEP_KEY]
+        if load_step and self.STEP_KEY in extra_data:
+            self.num_steps = extra_data[self.STEP_KEY]
 
         return extra_data
 
@@ -168,7 +214,31 @@ class Project():
         save_step: bool = True,
         **state_dict: SupportsStateDict
     ):
-        """Save state dict."""
+        """Save state dict to `WORK_DIR/CKPTS_FOLDER/Scenario/FILE_NAME`.
+
+        Args:
+            interval (int): The epoch increase compared to the last saved
+                checkpoint file. Calling this function will increase the save
+                counter of the scenario by 1. The save operation will be
+                triggered only when the counter reaches the interval, and then
+                the counter will be cleared.
+            save_step (bool, optional): Let the checkpoint file include step info,
+                which grows as the `sucrose.step()` function is called. Defaults to `True`.
+            **state_dict (Any): Objects to save. Save state dicts if they support.
+
+        Examples:
+            ```
+            sucrose.save_state_dict(10, model=model, optim=optim)
+            ```
+            This line may generate a checkpoint file like:
+            ```
+            {
+                "model": {...} # state dict of the model
+                "optim": {...} # state dict of the optimizer
+                "step": 1000 # for example
+            }
+            ```
+        """
         self._local_epoch += 1
         if self._local_epoch < interval:
             return None
@@ -178,9 +248,9 @@ class Project():
         file_name = self._make_ckpt_name(self.LAST_EPOCH)
 
         if save_step:
-            if STEP_KEY in state_dict:
-                raise ValueError(f"Key {STEP_KEY!r} is reserved for step info.")
-            state_dict[STEP_KEY] = self.num_steps
+            if self.STEP_KEY in state_dict:
+                raise ValueError(f"Key {self.STEP_KEY!r} is reserved for step info.")
+            state_dict[self.STEP_KEY] = self.num_steps
 
         return save_state_dict_impl(
             self.CKPTS_DIR, file_name, **state_dict
@@ -192,17 +262,17 @@ class Project():
         return start_pytorch_tensorboard_impl(self.LOGS_DIR, **kwargs)
 
 
-def get_current_project() -> Project:
-    result = get_current('project')
+def get_current_scenario() -> Scenario:
+    result = get_current('Scenario')
 
     if result is None:
-        raise RuntimeError("Start a project before getting current project.")
+        raise RuntimeError("Start a scenario before getting the current.")
 
     return result
 
 
-def auto_get_project(proj: Project | None = None, /) -> Project:
-    if proj is None:
-        return get_current_project()
+def auto_get_scenario(scen: Scenario | None = None, /) -> Scenario:
+    if scen is None:
+        return get_current_scenario()
     else:
-        return proj
+        return scen

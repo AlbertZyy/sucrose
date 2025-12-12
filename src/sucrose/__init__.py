@@ -6,132 +6,18 @@ The sucrose package manages files of pytorch experiment projects.
 """
 
 __all__ = [
-    "start_project",
-    "step",
-    "get_current_step",
-    "epoch_range",
-    "find_last_epoch",
-    "load_state_dict",
-    "save_state_dict",
-    "start_pytorch_tensorboard",
+    "scenario"
 ]
 
-from typing import Any, TypeVar
-from collections.abc import Callable
-
-from .const import *
-from .config import *
 from .project import *
 from .sucrose_logger import logger
 
-_R = TypeVar('_R')
 
+def scenario(work_dir: str, name: str):
+    """Start a Scenario."""
+    from .project.scenario import set_current
 
-def start_project(work_dir: str, name: str):
-    """Start a project."""
-    proj = Project(work_dir, name)
-    set_current('project', proj)
-    return proj
+    sc = Scenario(work_dir, name)
+    set_current('Scenario', sc)
 
-### Config
-
-def partial(func: Callable[..., _R], /, prefix: str, proj: Project | None = None):
-    return auto_get_project(proj).partial(func, prefix)
-
-### Training
-
-def step(num: int = 1, /, proj: Project | None = None):
-    return auto_get_project(proj).step(num)
-
-def get_current_step(proj: Project | None = None, /):
-    return auto_get_project(proj).num_steps
-
-def epoch_range(num: int, /, *, proj: Project | None = None):
-    """Create a range object to iterate over epochs."""
-    return auto_get_project(proj).epoch_range(num)
-
-### Ckpts
-
-def find_last_epoch(proj: Project | None = None, /):
-    """Find the number of finished epoches, which is alse the index(0-base)
-        of the next epoch. Return `0` if no epoch found."""
-    return auto_get_project(proj).LAST_EPOCH
-
-def load_state_dict(
-    epoch: int | None = None, *,
-    proj: Project | None = None,
-    load_step: bool = True,
-    loader_kwds: dict[str, Any] = {},
-    **state_dict: Any
-):
-    """Load state dict to objects.
-
-    Args:
-        epoch (int | None, optional): The epoch number of the checkpoint file to read.
-            Use the biggest number found in the folder if `None`. Defaults to `None`.
-        project (ProjectHeader, optional): Project, defaults to the last created.
-        loader_kwds (Dict[str, Any], optional): Keyword args for the loader function
-            like `torch.load`.
-        load_step (bool, optional): Read step info (if exists) from file into
-            the project header if `True`. Defaults to `True`.
-
-    Returns:
-        Dict: Objects remaining in the dictionary after loading the state dict.
-
-    Examples:
-        ```
-        sucrose.load_state_dict(model=model, optim=optim)
-        ```
-        This line is equivelant to:
-        ```
-        data = torch.load("path/to/checkpoint.pt")
-        model.load_state_dict(data['model'])
-        optim.load_state_dict(data['optim'])
-        ph.num_step = data['step'] # this key is actually `sucrose.const.STEP_KEY`
-        ```
-    """
-    return auto_get_project(proj).load_state_dict(
-        epoch, load_step=load_step, loader_kwds=loader_kwds, **state_dict
-    )
-
-def save_state_dict(
-    interval: int, *,
-    proj: Project | None = None,
-    save_step: bool = True,
-    **state_dict: Any
-):
-    """Save state dict to `WORK_DIR/CKPTS_FOLDER/PROJECT/FILE_NAME.pt`.
-
-    Args:
-        interval (int): The epoch increase compared to the last saved checkpoint file.
-            Calling this function will increase the save counter of the project by 1.
-            The save operation will be triggered only when the counter reaches the interval,
-            and then the counter will be cleared.
-        project (ProjectHeader, optional): Project, defaults to the last created.
-        save_step (bool, optional): Let the checkpoint file include step info,
-            which grows as the `sucrose.step()` function is called. Defaults to `True`.
-        **state_dict (Any): Objects to save. Save state dicts if they support.
-
-    Examples:
-        ```
-        sucrose.save_state_dict(10, model=model, optim=optim)
-        ```
-        This line may generate a checkpoint file like:
-        ```
-        {
-            "model": {...} # state dict of the model
-            "optim": {...} # state dict of the optimizer
-            "step": 1000 # for example
-        }
-        ```
-    """
-    return auto_get_project(proj).save_state_dict(
-        interval, save_step=save_step, **state_dict
-    )
-
-### Logs
-
-def start_pytorch_tensorboard(proj: Project | None = None, **kwargs):
-    """Start a pytorch tensorboard SummaryWriter with log dir
-    `WORK_DIR/LOGS_FOLDER/PROJECT`."""
-    return auto_get_project(proj).start_pytorch_tensorboard(**kwargs)
+    return sc

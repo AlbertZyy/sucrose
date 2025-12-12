@@ -20,26 +20,26 @@ class ExampleModel(nn.Module):
 
 
 def main(index: int):
-    scp = sucrose.start_project('example', 'base/test1')
+    ssc = sucrose.scenario('example', 'base/test1')
 
-    model = scp.partial(ExampleModel, "model")()
-    optim = Adam(model.parameters(), lr=scp["optim.lr"])
+    model = ssc.partial(ExampleModel, "model")()
+    optim = Adam(model.parameters(), lr=ssc["optim.lr"])
 
-    scp.load_state_dict(model=model, optim=optim, loader_kwds={'weights_only': True})
+    ssc.load_state_dict(model=model, optim=optim, loader_kwds={'weights_only': True})
 
     train_set = TensorDataset(torch.arange(100, dtype=torch.float32).reshape(10, 10))
     train_loader = DataLoader(train_set, batch_size=2, shuffle=True)
     eval_set = TensorDataset(torch.arange(50, dtype=torch.float32).reshape(5, 10))
     eval_loader = DataLoader(eval_set, batch_size=2)
 
-    writer = scp.start_pytorch_tensorboard()
+    writer = ssc.start_pytorch_tensorboard()
 
-    for epoch in scp.epoch_range(100):
+    for epoch in ssc.epoch_range(100):
         model.train()
 
         for data, in train_loader:
             optim.step()
-            scp.step()
+            ssc.step()
             loss = torch.mean(data, dtype=torch.float32)
             writer.add_scalar('loss(train)', loss)
 
@@ -51,9 +51,9 @@ def main(index: int):
             loss_list.append(loss)
 
         num = len(loss_list)
-        writer.add_scalar('loss(eval)', sum(loss_list)/num, scp.num_steps)
+        writer.add_scalar('loss(eval)', sum(loss_list)/num, ssc.num_steps)
 
-        scp.save_state_dict(10, model=model, optim=optim)
+        ssc.save_state_dict(10, model=model, optim=optim)
 
 
 if __name__ == "__main__":
