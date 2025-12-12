@@ -9,8 +9,6 @@ import os
 from typing import Any, Protocol, runtime_checkable
 from collections.abc import Mapping
 
-from ..const import *
-
 
 def _save_pt_file(ckpts_dir: str, file_name: str, data: dict[str, Any]):
     from torch import save

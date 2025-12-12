@@ -66,7 +66,7 @@ def load_config(work_dir: str) -> dict[str, Any]:
         config_data = yaml.safe_load(f)
 
     assert isinstance(config_data, dict), "config.yaml is expected to be a dict"
-    logger.info(f"config file loaded from {log_file}")
+    logger.info(f"Config file loaded from {log_file}")
 
     return config_data
 
@@ -92,9 +92,10 @@ class Scenario():
         self.CKPTS_EXT    = lookup(**context, field="ckpts_extension").lstrip('.')
         self.STEP_KEY     = lookup(**context, field="step_key")
 
+        name_ = name.replace("/", "_")
         self.LAST_EPOCH = find_latest_epoch(
             self.CKPTS_DIR,
-            f'{name.replace("/", "_")}_{self.EPOCH_PREFIX}([0-9]*).{self.CKPTS_EXT}'
+            f'{name_}_{self.EPOCH_PREFIX}([0-9]*).{self.CKPTS_EXT}'
         )
         self._step = 0 # number of steps finished, index of the next
         self._local_epoch = 0
@@ -114,7 +115,8 @@ class Scenario():
         return os.path.join(self.WORK_DIR, self.LOGS_FOLDER, self.NAME)
 
     def _make_ckpt_name(self, epoch: int):
-        return f"{self.NAME.replace("/", "_")}_{self.EPOCH_PREFIX}{epoch}.{self.CKPTS_EXT}"
+        name = self.NAME.replace("/", "_")
+        return f"{name}_{self.EPOCH_PREFIX}{epoch}.{self.CKPTS_EXT}"
 
     ### Config
 
@@ -198,12 +200,14 @@ class Scenario():
                 self.CKPTS_DIR, file_name, loader_kwds=loader_kwds, **state_dict
             )
         except FileNotFoundError:
-            logger.warning(f"No checkpoint found for epoch {epoch}. "
-                           "Loading skipped")
+            logger.warning(f"No checkpoint found for scenario {self.NAME!r}. "
+                           "Loading skipped.")
             return {}
 
         if load_step and self.STEP_KEY in extra_data:
             self.num_steps = extra_data[self.STEP_KEY]
+
+        logger.info(f"{file_name} is loaded, at step {self.num_steps}.")
 
         return extra_data
 
@@ -213,7 +217,7 @@ class Scenario():
         *,
         save_step: bool = True,
         **state_dict: SupportsStateDict
-    ):
+    ) -> None:
         """Save state dict to `WORK_DIR/CKPTS_FOLDER/Scenario/FILE_NAME`.
 
         Args:
@@ -252,14 +256,18 @@ class Scenario():
                 raise ValueError(f"Key {self.STEP_KEY!r} is reserved for step info.")
             state_dict[self.STEP_KEY] = self.num_steps
 
-        return save_state_dict_impl(
+        save_state_dict_impl(
             self.CKPTS_DIR, file_name, **state_dict
         )
+
+        logger.info(f"{file_name} is saved, at step {self.num_steps}.")
 
     ### Logs
 
     def start_pytorch_tensorboard(self, **kwargs):
-        return start_pytorch_tensorboard_impl(self.LOGS_DIR, **kwargs)
+        result = start_pytorch_tensorboard_impl(self.LOGS_DIR, **kwargs)
+        logger.info(f"Logger started at {self.LOGS_DIR}")
+        return result
 
 
 def get_current_scenario() -> Scenario:

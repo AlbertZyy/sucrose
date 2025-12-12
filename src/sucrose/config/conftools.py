@@ -15,19 +15,25 @@ def _get_keyword_params(target: Callable, /) -> tuple[list[str], list[bool], boo
 
     if isinstance(target, type):
         if "__init__" in target.__dict__:
-            target = target.__init__
+            func = target.__init__
         elif "__new__" in target.__dict__:
-            target = target.__new__
+            func = target.__new__
         else:
             raise TypeError("target must have __init__ or __new__ method "
                             "to deduce keyword parameters")
+    else:
+        func = target
 
-    sig = inspect.signature(target)
+    sig = inspect.signature(func)
     results = []
     has_default = []
     has_var_keyword = False
+    the_first = True
 
     for name, param in sig.parameters.items():
+        if the_first and isinstance(target, type):
+            the_first = False
+            continue
         if param.kind in (param.POSITIONAL_ONLY, param.VAR_POSITIONAL):
             continue
         if param.kind == param.VAR_KEYWORD:
