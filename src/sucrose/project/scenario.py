@@ -102,7 +102,7 @@ class Scenario():
 
 
     def __del__(self):
-        if self._local_epoch != 0:
+        if hasattr(self, "_local_epoch") and self._local_epoch != 0:
             logger.warning(f"There are still {self._local_epoch} epochs that "
                            "are not saved as checkpoint files by `save_state_dict()`. ")
 

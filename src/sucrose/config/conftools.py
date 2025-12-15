@@ -55,12 +55,11 @@ class partial_config(partial, Generic[_R]):
             keywords.update(dataset)
             return super().__new__(cls, func, **keywords)
 
-        for name, has_default in zip(names_all, has_default_all):
+        for name, _ in zip(names_all, has_default_all):
             try:
                 keywords[name] = dataset[name]
             except KeyError:
-                if not has_default:
-                    raise ValueError(f"key {name!r} is missing in dataset")
+                pass
 
         return super().__new__(cls, func, **keywords)
 
