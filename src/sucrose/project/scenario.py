@@ -99,7 +99,7 @@ class Scenario():
         )
         self._step = 0 # number of steps finished, index of the next
         self._local_epoch = 0
-
+        self._config_cache: dict[str, Any] = {}
 
     def __del__(self):
         if hasattr(self, "_local_epoch") and self._local_epoch != 0:
@@ -121,11 +121,16 @@ class Scenario():
     ### Config
 
     def __getitem__(self, field: str):
-        return lookup(self.CONFIG, domain=self.NAME, field=field)
+        try:
+            return self._config_cache[field]
+        except KeyError:
+            val = lookup(self.CONFIG, domain=self.NAME, field=field)
+            self._config_cache[field] = val
+            return val
 
     def get_config(self, field: str, default: Any = None):
         try:
-            return lookup(self.CONFIG, domain=self.NAME, field=field)
+            return self[field]
         except KeyError:
             logger.warning(f"field {field!r} is not found in the config, "
                            f"fallback to default {default!r}")
