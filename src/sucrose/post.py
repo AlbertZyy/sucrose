@@ -32,7 +32,7 @@ def load_tensorboard_scalars(log_dir: str):
     return ea
 
 
-def tensorboard_scalars_to_dataframe(event_acc, tag: str, run_name: str):
+def tensorboard_scalars_to_dataframe(event_acc, tag: str):
     try:
         from tensorboard.backend.event_processing import event_accumulator
     except ImportError:
@@ -50,8 +50,6 @@ def tensorboard_scalars_to_dataframe(event_acc, tag: str, run_name: str):
         "step": [e.step for e in events],
         "value": [e.value for e in events],
         "wall_time": [e.wall_time for e in events],
-        "run": run_name,
-        "tag": tag,
     }).set_index("step")
 
 
@@ -89,27 +87,27 @@ class LogDataFrame:
 
         self._tags = tags
 
-    def load(self) -> DataFrame:
-        frames: list[DataFrame] = []
+    def load(self) -> dict[tuple[str, str], DataFrame]:
+        frames: dict[tuple[str, str], DataFrame] = {}
 
         for sc in self._scenarios:
             ea = load_tensorboard_scalars(sc.LOGS_DIR)
             for tag in self._tags:
-                df = tensorboard_scalars_to_dataframe(ea, tag, sc.NAME)
+                df = tensorboard_scalars_to_dataframe(ea, tag)
                 if df is None:
                     logger.warning(f"No tag named {tag!r} in {sc.NAME!r}")
                     continue
-                frames.append(df)
+                frames[sc.NAME, tag] = df
 
-        return pd.concat(frames)
+        return frames
 
 
 def plot_evolution(
-    df: DataFrame,
+    dfs: dict[tuple[str, str], DataFrame],
+    field: str = "value",
     axes: Axes | None = None,
     fmts: dict[tuple[str, str], str] | list[str] | None = None,
     *,
-    xlabel: str | None = None,
     ylabel: str | None = None,
     log_scale: str = "auto",
     legend_fmt: str = "{run} - {tag}",
@@ -120,22 +118,19 @@ def plot_evolution(
     if axes is None:
         axes = plt.gca()
 
-    for run, g in df.groupby("run"):
-        for tag, gg in g.groupby("tag"):
-            if isinstance(fmts, list) and cursor < len(fmts):
-                args = gg.index, gg["value"], fmts[cursor]
-            elif isinstance(fmts, dict) and (run, tag) in fmts:
-                args = gg.index, gg["value"], fmts[(run, tag)]
-            else:
-                args = gg.index, gg["value"]
+    for (run, tag), gg in dfs.items():
+        if isinstance(fmts, list) and cursor < len(fmts):
+            args = gg.index, gg[field], fmts[cursor]
+        elif isinstance(fmts, dict) and (run, tag) in fmts:
+            args = gg.index, gg[field], fmts[(run, tag)]
+        else:
+            args = gg.index, gg[field]
 
-            line = axes.plot(*args, label=legend_fmt.format(run=run, tag=tag))
-            lines.append(line)
-            cursor += 1
+        line = axes.plot(*args, label=legend_fmt.format(run=run, tag=tag))
+        lines.append(line)
+        cursor += 1
 
-    xlabel = df.index.name if xlabel is None else xlabel
-    ylabel = "value" if ylabel is None else ylabel
-    axes.set_xlabel(xlabel)
+    ylabel = field if ylabel is None else ylabel
     axes.set_ylabel(ylabel)
 
     if log_scale in ("auto", "AUTO", "Auto"):
